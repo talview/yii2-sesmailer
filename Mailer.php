@@ -8,6 +8,7 @@ use yii\mail\BaseMailer;
 
 /**
  * Mailer implementing email queing and delivery functions
+ * @author Mani Ka <mani@talview.com>
  */
 class Mailer extends BaseMailer
 {

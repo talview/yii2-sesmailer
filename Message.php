@@ -11,6 +11,7 @@ use Yii;
  * @method Mailer getMailer() returns mailer instance.
  *
  * @property $sesMessage SES message instance. This property is read-only.
+ * @author Mani Ka <mani@talview.com>
  *
  */
 class Message extends BaseMessage

@@ -18,17 +18,7 @@ Either run
 or add
 
 ```json
-....
-    "repositories":[
-        {
-            "type":"git",
-            "url":"git@gitlab.talview.com:media/flowplayer.git"
-        }
-    ],
-... 
-    "require": {
-        "talview/sesmailer": "~1.0"
-    }
+    "talview/sesmailer": "~1.0"
 ```
 
 to composer.json.
