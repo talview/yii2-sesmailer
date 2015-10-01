@@ -1,0 +1,20 @@
+{
+    "name": "talview/sesmailer",
+    "description": "SES Mailer Service Interface for Yii2",
+    "type": "library",
+    "require": {
+        "yiisoft/yii2": ">=2.0.4",
+        "aws/aws-sdk-php": "2.*@stable"
+    },
+    "license": "Properitory",
+    "authors": [
+        {
+            "name": "Mani Ka",
+            "email": "mani@talview.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": { "talview\\sesmailer\\": "" }
+    },
+    "minimum-stability": "stable"
+}
