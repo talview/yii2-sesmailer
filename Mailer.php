@@ -2,8 +2,10 @@
 
 namespace talview\sesmailer;
 
+use Aws\Ses\Exception\SesException;
 use \Aws\Ses\SesClient;
 use Yii;
+use yii\base\InvalidConfigException;
 use yii\mail\BaseMailer;
 
 /**
@@ -12,12 +14,10 @@ use yii\mail\BaseMailer;
  */
 class Mailer extends BaseMailer
 {
-    /**
-     * @var
-     */
-    private $client;
-     
-    public $messageConfig ;
+
+    public $client;
+
+    public $messageConfig = [] ;
 
 
     /**
@@ -26,18 +26,32 @@ class Mailer extends BaseMailer
     public function init()
     {
         parent::init();
-    }    
-    
+        if ($this->client === null) {
+            throw new InvalidConfigException('The "client" property must be set.');
+        }
+        if (!$this->client instanceof SesClient) {
+            $this->client = new SesClient($this->client);
+        }
+
+    }
+
     /**
-     * @inheritdoc
+     *
+     * @param \talview\sesmailer\Message $message
+     *
+     * @return bool
      */
     protected function sendMessage($message)
     {
-        if($this->client instanceof  SesClient){
-            $result = $this->client->sendEmail($message->getSESMessage());    
-            return true;
+        if($this->client instanceof SesClient){
+            try {
+                return $this->client->sendEmail($message->getSESMessage());
+            }catch(SesException $e) {
+                echo $e->getMessage();
+                Yii::error($e->getMessage());
+            }
         }else{
-            throw new \yii\base\InvalidConfigException('Invalid client config');
+            return false;
         }
 
     }

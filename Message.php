@@ -52,8 +52,8 @@ class Message extends BaseMessage
                     'Html'=>['Data'=>$this->getHtmlBody(),'Charset'=>$this->getCharset()],
                     ]
                 ],
-            'ReplyToAddress'=>$this->getReplyTo(),
-            'replyPath'     =>$this->getReplyTo(),
+            'ReplyToAddress'=>  $this->getReplyTo(),
+            'replyPath'     =>  $this->getReplyTo(),
         ];
     }
 
