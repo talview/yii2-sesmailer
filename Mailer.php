@@ -15,9 +15,7 @@ class Mailer extends BaseMailer
     /**
      * @var
      */
-    private $_sesClient;
-
-    private $_factory = [];
+    private $client;
      
     public $messageConfig ;
 
@@ -35,40 +33,13 @@ class Mailer extends BaseMailer
      */
     protected function sendMessage($message)
     {
-        $result = $this->getSesClient()->sendEmail($message->getSESMessage());
-        return true;
-    }
-
-    public function getSesClient(){
-        if (!is_object($this->_sesClient)) {
-            $this->_sesClient = $this->createSesClient();
+        if($this->client instanceof  SesClient){
+            $result = $this->client->sendEmail($message->getSESMessage());    
+            return true;
+        }else{
+            throw new \yii\base\InvalidConfigException('Invalid client config');
         }
-        return $this->_sesClient;
+
     }
 
-    /**
-     * @return mixed
-     */
-    public function createSesClient()
-    {
-        return SesClient::factory($this->getFactory());
-    }
-
-    /**
-     * @return array
-     */
-    public function getFactory()
-    {
-        return $this->_factory;
-    }
-
-    /**
-     * 
-     * @return self
-     */
-    public function setFactory($factory)
-    {
-        $this->_factory = $factory;
-        return $this;
-    }
 }

@@ -3,8 +3,8 @@
     "description": "SES Mailer Service Interface for Yii2",
     "type": "library",
     "require": {
-        "yiisoft/yii2": ">=2.0.4",
-        "aws/aws-sdk-php": "2.*@stable"
+        "yiisoft/yii2": ">=2.0.6",
+        "aws/aws-sdk-php": "3.*@stable"
     },
     "license": "Properitory",
     "authors": [
