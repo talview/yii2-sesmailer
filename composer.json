@@ -4,15 +4,10 @@
     "type": "library",
     "require": {
         "yiisoft/yii2": ">=2.0.6",
-        "aws/aws-sdk-php": "3.*@stable"
+        "aws/aws-sdk-php": "3.*@stable",
+        "swiftmailer/swiftmailer": "^5.4"
     },
-    "license": "Properitory",
-    "authors": [
-        {
-            "name": "Mani Ka",
-            "email": "mani@talview.com"
-        }
-    ],
+    "license": "MIT",
     "autoload": {
         "psr-4": { "talview\\sesmailer\\": "" }
     },
