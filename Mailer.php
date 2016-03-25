@@ -1,339 +1,111 @@
 <?php
-/**
- * @link http://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license http://www.yiiframework.com/license/
- */
 
 namespace talview\sesmailer;
 
+use Aws\Ses\Exception\SesException;
+use \Aws\Ses\SesClient;
 use Yii;
-use yii\mail\BaseMessage;
-use yii\mail\MailerInterface;
+use yii\base\InvalidConfigException;
+use yii\helpers\Console;
+use yii\mail\BaseMailer;
 
 /**
- * Message implements a message class based on SwiftMailer.
- *
- * @see http://swiftmailer.org/docs/messages.html
- * @see Mailer
- *
- * @method Mailer getMailer() returns mailer instance.
- *
- * @property \Swift_Message $swiftMessage Swift message instance. This property is read-only.
- *
- * @author Paul Klimov <klimov.paul@gmail.com>
- * @since 2.0
+ * Mailer implementing email queueing and delivery functions
+ * @author Mani Ka <mani@talview.com>
  */
-class Message extends BaseMessage
+class Mailer extends BaseMailer
 {
+
     /**
-     * @var \Swift_Message Swift message instance.
+     * @var SesClient|array
      */
-    private $_swiftMessage;
+    public $client;
+
+    public $messageConfig = [] ;
 
 
     /**
-     * @return \Swift_Message Swift message instance.
+     * @inheritdoc
      */
-    public function getSwiftMessage()
+    public function init()
     {
-        if (!is_object($this->_swiftMessage)) {
-            $this->_swiftMessage = $this->createSwiftMessage();
+        parent::init();
+        if ($this->client === null) {
+            throw new InvalidConfigException('The "client" property must be set.');
+        }
+        if (!$this->client instanceof SesClient) {
+            $this->client = new SesClient($this->client);
         }
 
-        return $this->_swiftMessage;
     }
 
     /**
-     * @inheritdoc
+     *
+     * @param \talview\sesmailer\Message $message
+     *
+     * @return bool
      */
-    public function getCharset()
+    protected function sendMessage($message)
     {
-        return $this->getSwiftMessage()->getCharset();
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function setCharset($charset)
-    {
-        $this->getSwiftMessage()->setCharset($charset);
-
-        return $this;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getFrom()
-    {
-        return $this->getSwiftMessage()->getFrom();
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function setFrom($from)
-    {
-        $this->getSwiftMessage()->setFrom($from);
-
-        return $this;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getReplyTo()
-    {
-        return $this->getSwiftMessage()->getReplyTo();
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function setReplyTo($replyTo)
-    {
-        $this->getSwiftMessage()->setReplyTo($replyTo);
-
-        return $this;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getTo()
-    {
-        return $this->getSwiftMessage()->getTo();
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function setTo($to)
-    {
-        $this->getSwiftMessage()->setTo($to);
-
-        return $this;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getCc()
-    {
-        return $this->getSwiftMessage()->getCc();
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function setCc($cc)
-    {
-        $this->getSwiftMessage()->setCc($cc);
-
-        return $this;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getBcc()
-    {
-        return $this->getSwiftMessage()->getBcc();
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function setBcc($bcc)
-    {
-        $this->getSwiftMessage()->setBcc($bcc);
-
-        return $this;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getSubject()
-    {
-        return $this->getSwiftMessage()->getSubject();
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function setSubject($subject)
-    {
-        $this->getSwiftMessage()->setSubject($subject);
-
-        return $this;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function setTextBody($text)
-    {
-        $this->setBody($text, 'text/plain');
-
-        return $this;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function setHtmlBody($html)
-    {
-        $this->setBody($html, 'text/html');
-
-        return $this;
-    }
-
-    /**
-     * Sets the message body.
-     * If body is already set and its content type matches given one, it will
-     * be overridden, if content type miss match the multipart message will be composed.
-     * @param string $body body content.
-     * @param string $contentType body content type.
-     */
-    protected function setBody($body, $contentType)
-    {
-        $message = $this->getSwiftMessage();
-        $oldBody = $message->getBody();
-        $charset = $message->getCharset();
-        if (empty($oldBody)) {
-            $parts = $message->getChildren();
-            $partFound = false;
-            foreach ($parts as $key => $part) {
-                if (!($part instanceof \Swift_Mime_Attachment)) {
-                    /* @var $part \Swift_Mime_MimePart */
-                    if ($part->getContentType() == $contentType) {
-                        $charset = $part->getCharset();
-                        unset($parts[$key]);
-                        $partFound = true;
-                        break;
-                    }
-                }
-            }
-            if ($partFound) {
-                reset($parts);
-                $message->setChildren($parts);
-                $message->addPart($body, $contentType, $charset);
-            } else {
-                $message->setBody($body, $contentType);
-            }
-        } else {
-            $oldContentType = $message->getContentType();
-            if ($oldContentType == $contentType) {
-                $message->setBody($body, $contentType);
-            } else {
-                $message->setBody(null);
-                $message->setContentType(null);
-                $message->addPart($oldBody, $oldContentType, $charset);
-                $message->addPart($body, $contentType, $charset);
-            }
+        try {
+            return $this->client->sendRawEmail([
+                'RawMessage' => [
+                    'Data' => $message->getSwiftMessage()
+                ]
+            ]);
+        } catch (SesException $e) {
+            echo $e->getMessage();
+            Yii::error($e->getMessage());
         }
+        return false;
     }
 
     /**
-     * @inheritdoc
+     *
+     * @param \talview\sesmailer\Message $message
+     *
+     * @return bool
      */
-    public function attach($fileName, array $options = [])
+    protected function sendMessageAsync($message)
     {
-        $attachment = \Swift_Attachment::fromPath($fileName);
-        if (!empty($options['fileName'])) {
-            $attachment->setFilename($options['fileName']);
+        try {
+            return $this->client->sendRawEmailAsync([
+                'RawMessage' => [
+                    'Data' => base64_encode($message->getSwiftMessage())
+                ]
+            ]);
+        } catch (SesException $e) {
+            Console::output($e->getMessage());
+            Yii::error($e->getMessage());
         }
-        if (!empty($options['contentType'])) {
-            $attachment->setContentType($options['contentType']);
-        }
-        $this->getSwiftMessage()->attach($attachment);
-
-        return $this;
+        return false;
     }
 
     /**
-     * @inheritdoc
+     * Sends the given email message.
+     * This method will log a message about the email being sent.
+     * If [[useFileTransport]] is true, it will save the email as a file under [[fileTransportPath]].
+     * Otherwise, it will call [[sendMessage()]] to send the email to its recipient(s).
+     * Child classes should implement [[sendMessage()]] with the actual email sending logic.
+     * @param \talview\sesmailer\Message $message email message instance to be sent
+     * @return \GuzzleHttp\Promise\Promise whether the message has been sent successfully
      */
-    public function attachContent($content, array $options = [])
+    public function sendAsync($message)
     {
-        $attachment = \Swift_Attachment::newInstance($content);
-        if (!empty($options['fileName'])) {
-            $attachment->setFilename($options['fileName']);
-        }
-        if (!empty($options['contentType'])) {
-            $attachment->setContentType($options['contentType']);
-        }
-        $this->getSwiftMessage()->attach($attachment);
-
-        return $this;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function embed($fileName, array $options = [])
-    {
-        $embedFile = \Swift_EmbeddedFile::fromPath($fileName);
-        if (!empty($options['fileName'])) {
-            $embedFile->setFilename($options['fileName']);
-        }
-        if (!empty($options['contentType'])) {
-            $embedFile->setContentType($options['contentType']);
+        if (!$this->beforeSend($message)) {
+            return false;
         }
 
-        return $this->getSwiftMessage()->embed($embedFile);
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function embedContent($content, array $options = [])
-    {
-        $embedFile = \Swift_EmbeddedFile::newInstance($content);
-        if (!empty($options['fileName'])) {
-            $embedFile->setFilename($options['fileName']);
+        $address = $message->getTo();
+        if (is_array($address)) {
+            $address = implode(', ', array_keys($address));
         }
-        if (!empty($options['contentType'])) {
-            $embedFile->setContentType($options['contentType']);
-        }
+        Yii::info('Sending email "' . $message->getSubject() . '" to "' . $address . '"', __METHOD__);
 
-        return $this->getSwiftMessage()->embed($embedFile);
-    }
+        $promise = $this->sendMessageAsync($message);
+        $this->afterSend($message, true);// async promises
 
-    /**
-     * @inheritdoc
-     */
-    public function toString()
-    {
-        return $this->getSwiftMessage()->toString();
-    }
-
-    /**
-     * Creates the Swift email message instance.
-     * @return \Swift_Message email message instance.
-     */
-    protected function createSwiftMessage()
-    {
-        return new \Swift_Message();
-    }
-
-    /**
-     * Sends this email message.
-     * @param MailerInterface $mailer the mailer that should be used to send this message.
-     * If no mailer is given it will first check if [[mailer]] is set and if not,
-     * the "mail" application component will be used instead.
-     * @return boolean whether this message is sent successfully.
-     */
-    public function sendAsync(MailerInterface $mailer = null)
-    {
-        if ($mailer === null && $this->mailer === null) {
-            $mailer = Yii::$app->getMailer();
-        } elseif ($mailer === null) {
-            $mailer = $this->mailer;
-        }
-        return $mailer->sendAsync($this);
+        return $promise;
     }
 
 }
